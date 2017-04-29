@@ -1,9 +1,7 @@
 package student;
 
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Random;
+import java.awt.*;
+import java.util.*;
 
 import graph.*;
 import steinerTree.SteinerTreeTester;
@@ -34,65 +32,116 @@ public class SteinerTree
     // all of the target vertices.
     public static int steinerTree(Graph g, ArrayList<Vertex> targets)
     {
-        // sort each vertex's edges shortest first, this should help a little
-        g.sortVertexEdgeLists(new Graph.CompareEdgesSmallestFirst());
+        Vertex[][] all_paths = new Vertex[g.numVertices()][g.numVertices()];
+        double[][] shortest_paths = shortestPaths(g, all_paths);
+        PathBuilder path_builder = new PathBuilder(all_paths);
 
-        // start at first target vertex
-        Vertex v = targets.get(0);
-        dfs(g, v, targets.size());       // search based on the number of remaining targets
+        Set<Vertex> selected_vertices = new HashSet<>();
+        selected_vertices.add(targets.get(0));
 
-        // go add up the weights of all the marked edges
-        int length = 0;
-        Iterator<Edge> itr = g.edgeIterator();  // iterate over all edges in the graph
-        while (itr.hasNext()) {
-            Edge e = itr.next();
-            if (e.getMark() == 1)
-                length += e.getWeight();
+        int total_weight = 0;
+        for (int i = 1; i < targets.size(); i++) {
+            Vertex target = targets.get(i);
+
+            int min_weight = Integer.MAX_VALUE;
+            ArrayList<Vertex> min_path = new ArrayList<>();
+            for (Vertex vertex : selected_vertices) {
+                int weight = (int) shortest_paths[vertex.getId()][target.getId()];
+                if (weight < min_weight) {
+                    min_weight = weight;
+                    min_path = path_builder.getPath(vertex, target);
+                }
+            }
+            markPath(g, min_path);
+            selected_vertices.addAll(min_path);
+            total_weight += min_weight;
         }
-
-        return length;
+        return total_weight;
     }
 
-    // Recursively depth first search the graph until all targets are reached.
-    // As it searches, it tags vertices as reached by setting their value field to 1.
-    // It sets the mark field for edges that were used to reach new target vertices.
-    // We can tell this occurred when we return from a recursive search of an edge and
-    // the number of targets remaining has decreased.
-    //
-    // We exit the dfs early once all targets have been found.
-    //
-    // returns: the number of targets still remaining
-    public static int dfs(Graph g, Vertex v, int targetsRemaining) {
-        v.setValue(1);             // set value to indicated this vertex has been reached
-        if (v.getMark() == 1)
-            targetsRemaining--;    // we found a target vertex
-        if (targetsRemaining == 0)
-            return 0;				// all targets found, we are done
+    private static void markPath(Graph g, ArrayList<Vertex> path) {
+        for (int i = 0; i < path.size() - 1; i++) {
+            Vertex v1 = path.get(i);
+            Vertex v2 = path.get(i + 1);
 
-        // iterate over all edges out of this vertex
-        for (Edge e : v) {
-            Vertex newv = e.getOppositeVertexOf(v);
-            if (newv.getValue() == 0) { // found an unreached vertex
-                e.setMark(1);              // we are considering
-                e.setColor(Color.GREEN);     // color it green for animation)
-                SteinerTreeTester.show(g);
-                int newRemaining = dfs(g, newv, targetsRemaining); // recursively search
-                if (newRemaining < targetsRemaining) { // did this edge lead to any new targets
-                    targetsRemaining = newRemaining;
-                    e.setMark(1);                 // mark this edge as part of solution
-                    SteinerTreeTester.show(g);    // for animation show the graph at this point
+            g.findEdge(v1, v2).setMark(1);
+        }
+    }
+    private static int sum(ArrayList<Integer> values) {
+        int sum = 0;
+        for (int value : values) {
+            sum += value;
+        }
+        return sum;
+    }
+    private static double[][] shortestPaths(Graph graph, Vertex[][] all_paths) {
+        double[][] shortest_paths = new double[graph.numVertices()][graph.numVertices()];
+        buildInitialPathMatrices(graph, shortest_paths, all_paths);
+
+        for (int k = 0; k < graph.numVertices(); k++) {
+            for (int i = 0; i < graph.numVertices(); i++) {
+                for (int j = 0; j < graph.numVertices(); j++) {
+                    if ((shortest_paths[i][k] + shortest_paths[k][j]) < shortest_paths[i][j]) {
+                        shortest_paths[i][j] = shortest_paths[i][k] + shortest_paths[k][j];
+                        all_paths[i][j] = all_paths[i][k];
+                    }
                 }
-                else {
-                    e.setMark(0);                 // unmark, this lead to nothing used
-                    e.setColor(Color.RED);        // draw in red
-                    SteinerTreeTester.show(g);
-                }
-                if (targetsRemaining == 0)
-                    return 0;				// all targets found, we are done
             }
         }
 
-        return targetsRemaining;
+        return shortest_paths;
+    }
+
+    private static class PathBuilder {
+
+        private Vertex[][] all_paths;
+
+        private PathBuilder(Vertex[][] all_paths) {
+            this.all_paths = all_paths;
+        }
+
+        private ArrayList<Vertex> getPath(Vertex v1, Vertex v2) {
+            if (this.all_paths[v1.getId()][v2.getId()] == null) {
+                return new ArrayList<>();
+            }
+            else {
+                ArrayList<Vertex> path = new ArrayList<>();
+                path.add(v1);
+                while (v1 != v2) {
+                    v1 = this.all_paths[v1.getId()][v2.getId()];
+                    path.add(v1);
+                }
+                return path;
+            }
+        }
+    }
+
+    private static double[][] buildInitialPathMatrices(Graph graph, double[][] adjacency_matrix, Vertex[][] path_matrix) {
+        Iterator<Vertex> vertex_iterator_one = graph.vertexIterator();
+
+        while(vertex_iterator_one.hasNext()) {
+            Vertex v1 = vertex_iterator_one.next();
+            Iterator<Vertex> vertex_iterator_two = graph.vertexIterator();
+            while (vertex_iterator_two.hasNext()) {
+                Vertex v2 = vertex_iterator_two.next();
+                if (v1 == v2) {
+                    adjacency_matrix[v1.getId()][v2.getId()] = 0;
+                    path_matrix[v1.getId()][v2.getId()] = v2;
+                }
+                else {
+                    Edge edge = graph.findEdge(v1, v2);
+                    if (edge != null) {
+                        adjacency_matrix[v1.getId()][v2.getId()] = edge.getWeight();
+                        path_matrix[v1.getId()][v2.getId()] = v2;
+                    }
+                    else {
+                        adjacency_matrix[v1.getId()][v2.getId()] = Double.POSITIVE_INFINITY;
+                        path_matrix[v1.getId()][v2.getId()] = null;
+                    }
+                }
+            }
+        }
+        return adjacency_matrix;
     }
 }
 
