@@ -21,10 +21,13 @@ public class SteinerTree {
      * @return The total weight of the edges which make up the Steiner Tree.
      */
     public static int steinerTree(Graph graph, ArrayList<Vertex> targets) {
+
+        // Computes all pairs shortest paths and returns an object which can
+        // reconstruct the shortest path between two vertices.
         ShortestPaths shortest_paths = new ShortestPaths(graph);
 
-        Set<Vertex> selected_vertices = new HashSet<>();
-        selected_vertices.add(targets.get(0));
+        Set<Vertex> selected_vertices = new HashSet<>(); // The vertices which will make up the Steiner Tree.
+        selected_vertices.add(targets.get(0)); // Arbitrarily add the first target to the Steiner Tree.
 
         Set<Vertex> remaining_targets = new HashSet<>();
         for (int i = 1; i < targets.size(); i++) {
@@ -32,17 +35,26 @@ public class SteinerTree {
         }
 
         int total_weight = 0;
-        while (!remaining_targets.isEmpty()) {
+        while (!remaining_targets.isEmpty()) { // While there are still targets to connect to the Steiner Tree.
+
+            // Get the closest target to the current Steiner Tree,
+            // along with the vertex already in the Steiner Tree which is closest to the target.
             Pair<Vertex, Vertex> closestVertexPair = closestVertexPair(remaining_targets, selected_vertices, shortest_paths);
             Vertex closest_target = closestVertexPair.getFirst();
-            Vertex connected_selected_vertex = closestVertexPair.getSecond();
+            Vertex closest_selected_vertex = closestVertexPair.getSecond();
 
-            ArrayList<Vertex> closest_target_path = shortest_paths.getPath(connected_selected_vertex, closest_target);
-            int closest_target_weight = (int) shortest_paths.getPathWeight(connected_selected_vertex, closest_target);
+            // Get the shortest path connecting from the Steiner tree to the nearest target.
+            ArrayList<Vertex> closest_target_path = shortest_paths.getPath(closest_selected_vertex, closest_target);
+            int closest_target_weight = (int) shortest_paths.getPathWeight(closest_selected_vertex, closest_target);
 
+            // Mark the selected path on the graph.
             markPath(graph, closest_target_path);
+
+            // Add the selected path to the selected vertices and update the weight of the Steiner tree.
             selected_vertices.addAll(closest_target_path);
             total_weight += closest_target_weight;
+
+            // Remove the target which was just connected to the Steiner Tree.
             remaining_targets.remove(closest_target);
         }
 
@@ -67,7 +79,11 @@ public class SteinerTree {
         int min_weight = Integer.MAX_VALUE;
 
         for (Vertex set_one_vertex : vertex_set_one) {
+
+            // Get the vertex in set two which is closest to the current set_one_vertex of this loop.
             Vertex set_two_vertex = closestVertex(set_one_vertex, vertex_set_two, shortest_paths);
+
+            // Get the weight of the shortest path connecting the two vertices.
             int path_weight = (int) shortest_paths.getPathWeight(set_one_vertex, set_two_vertex);
             if (path_weight < min_weight) {
                 min_weight = path_weight;
@@ -83,7 +99,7 @@ public class SteinerTree {
      * Find the closest vertex to a given target vertex.
      *
      * @param target:         The vertex to find the closest vertex too.
-     * @param vertices:       The set of vertices to select from and to find the closest one to the target.
+     * @param vertices:       The set of vertices to select from and of which to find the closest one to the target.
      * @param shortest_paths: A ShortestPaths object containing the shortest paths between the target and the set of vertices.
      * @return The vertex in the given set of vertices which is closest to the target vertex.
      */
@@ -91,6 +107,8 @@ public class SteinerTree {
         int min_weight = Integer.MAX_VALUE;
         Vertex closest_vertex = null;
         for (Vertex vertex : vertices) {
+
+            // Get the weight of the shortest path from the current vertex to the target.
             int weight = (int) shortest_paths.getPathWeight(vertex, target);
             if (weight < min_weight) {
                 min_weight = weight;
@@ -103,7 +121,7 @@ public class SteinerTree {
     /**
      * Mark the edges of a graph that make up the given path.
      *
-     * @param graph: The Graph object to mark edges on.
+     * @param graph: The Graph object to mark the edges on.
      * @param path:  The vertices making up the path to mark.
      */
     private static void markPath(Graph graph, ArrayList<Vertex> path) {
