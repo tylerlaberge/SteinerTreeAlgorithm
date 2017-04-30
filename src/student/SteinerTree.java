@@ -6,6 +6,7 @@ import java.util.*;
 import graph.*;
 import steinerTree.SteinerTreeTester;
 import student.ShortestPaths;
+import student.Pair;
 
 /*
  * This Student class is meant to contain your algorithm.
@@ -36,33 +37,20 @@ public class SteinerTree
         Set<Vertex> selected_vertices = new HashSet<>();
         selected_vertices.add(targets.get(0));
 
-        ArrayList<Vertex> remaining_targets = new ArrayList<>();
+        Set<Vertex> remaining_targets = new HashSet<>();
         for (int i = 1; i < targets.size(); i ++) {
             remaining_targets.add(targets.get(i));
         }
 
         int total_weight = 0;
         while(!remaining_targets.isEmpty()) {
-            Vertex closest_target = null;
-            ArrayList<Vertex> closest_target_path = new ArrayList<>();
-            int closest_target_weight = Integer.MAX_VALUE;
+            Pair<Vertex, Vertex> closestVertexPair = closestVertexPair(remaining_targets, selected_vertices, shortest_paths);
+            Vertex closest_target = closestVertexPair.getFirst();
+            Vertex connected_selected_vertex = closestVertexPair.getSecond();
 
-            for (Vertex target : remaining_targets) {
-                int min_weight = Integer.MAX_VALUE;
-                ArrayList<Vertex> min_path = new ArrayList<>();
-                for (Vertex vertex : selected_vertices) {
-                    int weight = (int) shortest_paths.getPathWeight(vertex, target);
-                    if (weight < min_weight) {
-                        min_weight = weight;
-                        min_path = shortest_paths.getPath(vertex, target);
-                    }
-                }
-                if (min_weight < closest_target_weight) {
-                    closest_target_path = min_path;
-                    closest_target_weight = min_weight;
-                    closest_target = target;
-                }
-            }
+            ArrayList<Vertex> closest_target_path = shortest_paths.getPath(connected_selected_vertex, closest_target);
+            int closest_target_weight = (int) shortest_paths.getPathWeight(connected_selected_vertex, closest_target);
+
             markPath(g, closest_target_path);
             selected_vertices.addAll(closest_target_path);
             total_weight += closest_target_weight;
@@ -72,16 +60,37 @@ public class SteinerTree
         return total_weight;
     }
 
-//    private static int closestVertex(Vertex target, ArrayList<Vertex> selected_vertices, ArrayList<Vertex> path) {
-//        int min_weight = Integer.MAX_VALUE;
-//        for (Vertex vertex : selected_vertices) {
-//            int weight = (int) weight_matrix[vertex.getId()][target.getId()];
-//            if (weight < min_weight) {
-//                min_weight = weight;
-//                min_path = path_builder.getPath(vertex, target);
-//            }
-//        }
-//    }
+    private static Pair<Vertex, Vertex> closestVertexPair(
+            Set<Vertex> vertex_set_one, Set<Vertex> vertex_set_two, ShortestPaths shortest_paths) {
+
+        Vertex closest_set_one_vertex = null;
+        Vertex closest_set_two_vertex = null;
+        int min_weight = Integer.MAX_VALUE;
+
+        for (Vertex set_one_vertex : vertex_set_one) {
+            Vertex set_two_vertex = closestVertex(set_one_vertex, vertex_set_two, shortest_paths);
+            int path_weight = (int) shortest_paths.getPathWeight(set_one_vertex, set_two_vertex);
+            if (path_weight < min_weight) {
+                min_weight = path_weight;
+                closest_set_one_vertex = set_one_vertex;
+                closest_set_two_vertex = set_two_vertex;
+            }
+        }
+
+        return new Pair<>(closest_set_one_vertex, closest_set_two_vertex);
+    }
+    private static Vertex closestVertex(Vertex target, Set<Vertex> vertices, ShortestPaths shortest_paths) {
+        int min_weight = Integer.MAX_VALUE;
+        Vertex closest_vertex = null;
+        for (Vertex vertex : vertices) {
+            int weight = (int) shortest_paths.getPathWeight(vertex, target);
+            if (weight < min_weight) {
+                min_weight = weight;
+                closest_vertex = vertex;
+            }
+        }
+        return closest_vertex;
+    }
 
     private static void markPath(Graph g, ArrayList<Vertex> path) {
         for (int i = 0; i < path.size() - 1; i++) {
