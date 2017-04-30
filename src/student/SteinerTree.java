@@ -25,7 +25,7 @@ public class SteinerTree {
 
         // Computes all pairs shortest paths and returns an object which can
         // reconstruct the shortest path between two vertices.
-        ShortestPaths shortest_paths = new ShortestPaths(graph);  // This is an O(N^3) operation.
+        ShortestPaths shortest_paths = new ShortestPaths(graph);
 
         Set<Vertex> selected_vertices = new HashSet<>(); // The vertices which will make up the Steiner Tree.
         selected_vertices.add(targets.get(0)); // Arbitrarily add the first target to the Steiner Tree.
