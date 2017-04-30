@@ -1,12 +1,7 @@
 package student;
 
-import java.awt.*;
 import java.util.*;
-
 import graph.*;
-import steinerTree.SteinerTreeTester;
-import student.ShortestPaths;
-import student.Pair;
 
 /*
  * This Student class is meant to contain your algorithm.
