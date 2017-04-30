@@ -13,8 +13,9 @@ import java.util.Set;
 public class SteinerTree {
     /**
      * Approximate the Steiner Tree for the given Targets over the given Graph.
-     * <p>
      * The Edges that make up the Steiner Tree which connects all Target nodes will be marked.
+     *
+     * This is an O(V^3) operation, where V is the number of vertices in the given graph.
      *
      * @param graph:   The graph to find the Steiner Tree on.
      * @param targets: The vertices that the Steiner Tree must contain.
@@ -24,7 +25,7 @@ public class SteinerTree {
 
         // Computes all pairs shortest paths and returns an object which can
         // reconstruct the shortest path between two vertices.
-        ShortestPaths shortest_paths = new ShortestPaths(graph);
+        ShortestPaths shortest_paths = new ShortestPaths(graph);  // This is an O(N^3) operation.
 
         Set<Vertex> selected_vertices = new HashSet<>(); // The vertices which will make up the Steiner Tree.
         selected_vertices.add(targets.get(0)); // Arbitrarily add the first target to the Steiner Tree.
@@ -64,6 +65,8 @@ public class SteinerTree {
     /**
      * Find the closest pair of vertices from 2 separate sets of vertices.
      *
+     * This is an O(N*M) operation, where N and M are the number of vertices in the 2 sets of vertices, respectively.
+     *
      * @param vertex_set_one: The set of vertices which will contain the first vertex of the pair.
      * @param vertex_set_two: The set of vertices which will contain the second vertex of the pair.
      * @param shortest_paths: A ShortestPaths object containing the shortest paths between both sets of vertices.
@@ -98,6 +101,8 @@ public class SteinerTree {
     /**
      * Find the closest vertex to a given target vertex.
      *
+     * This is an O(N) operation, where N is the number of vertices in the given set of vertices.
+     *
      * @param target:         The vertex to find the closest vertex too.
      * @param vertices:       The set of vertices to select from and of which to find the closest one to the target.
      * @param shortest_paths: A ShortestPaths object containing the shortest paths between the target and the set of vertices.
@@ -121,6 +126,10 @@ public class SteinerTree {
     /**
      * Mark the edges of a graph that make up the given path.
      *
+     * The average time complexity of this is O(N*D),
+     * where N is the number of vertices making up the path,
+     * and D is the average degree of the vertices making up the path.
+     *
      * @param graph: The Graph object to mark the edges on.
      * @param path:  The vertices making up the path to mark.
      */
@@ -129,7 +138,7 @@ public class SteinerTree {
             Vertex v1 = path.get(i);
             Vertex v2 = path.get(i + 1);
 
-            graph.findEdge(v1, v2).setMark(1);
+            graph.findEdge(v1, v2).setMark(1); // This is an O(D) operation, where D is the degree of v1.
         }
     }
 }
