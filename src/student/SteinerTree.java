@@ -5,6 +5,7 @@ import java.util.*;
 
 import graph.*;
 import steinerTree.SteinerTreeTester;
+import student.ShortestPaths;
 
 /*
  * This Student class is meant to contain your algorithm.
@@ -28,35 +29,9 @@ import steinerTree.SteinerTreeTester;
  */
 public class SteinerTree
 {
-    private static class PathBuilder {
-
-        private Vertex[][] path_matrix;
-
-        private PathBuilder(Vertex[][] path_matrix) {
-            this.path_matrix = path_matrix;
-        }
-
-        private ArrayList<Vertex> getPath(Vertex v1, Vertex v2) {
-            if (this.path_matrix[v1.getId()][v2.getId()] == null) {
-                return new ArrayList<>();
-            }
-            else {
-                ArrayList<Vertex> path = new ArrayList<>();
-                path.add(v1);
-                while (v1 != v2) {
-                    v1 = this.path_matrix[v1.getId()][v2.getId()];
-                    path.add(v1);
-                }
-                return path;
-            }
-        }
-    }
-
     public static int steinerTree(Graph g, ArrayList<Vertex> targets)
     {
-        double[][] weight_matrix = new double[g.numVertices()][g.numVertices()];
-
-        PathBuilder path_builder = shortestPaths(g, weight_matrix);
+        ShortestPaths shortest_paths = new ShortestPaths(g);
 
         Set<Vertex> selected_vertices = new HashSet<>();
         selected_vertices.add(targets.get(0));
@@ -76,10 +51,10 @@ public class SteinerTree
                 int min_weight = Integer.MAX_VALUE;
                 ArrayList<Vertex> min_path = new ArrayList<>();
                 for (Vertex vertex : selected_vertices) {
-                    int weight = (int) weight_matrix[vertex.getId()][target.getId()];
+                    int weight = (int) shortest_paths.getPathWeight(vertex, target);
                     if (weight < min_weight) {
                         min_weight = weight;
-                        min_path = path_builder.getPath(vertex, target);
+                        min_path = shortest_paths.getPath(vertex, target);
                     }
                 }
                 if (min_weight < closest_target_weight) {
@@ -93,55 +68,20 @@ public class SteinerTree
             total_weight += closest_target_weight;
             remaining_targets.remove(closest_target);
         }
-        
+
         return total_weight;
     }
 
-    private static PathBuilder shortestPaths(Graph graph, double[][] weight_matrix) {
-        Vertex[][] path_matrix = new Vertex[graph.numVertices()][graph.numVertices()];
-
-        initializeShortestPathMatrices(graph, weight_matrix, path_matrix);
-
-        for (int k = 0; k < graph.numVertices(); k++) {
-            for (int i = 0; i < graph.numVertices(); i++) {
-                for (int j = 0; j < graph.numVertices(); j++) {
-                    if ((weight_matrix[i][k] + weight_matrix[k][j]) < weight_matrix[i][j]) {
-                        weight_matrix[i][j] = weight_matrix[i][k] + weight_matrix[k][j];
-                        path_matrix[i][j] = path_matrix[i][k];
-                    }
-                }
-            }
-        }
-
-        return new PathBuilder(path_matrix);
-    }
-
-    private static void initializeShortestPathMatrices(Graph graph, double[][] weight_matrix, Vertex[][] path_matrix) {
-        Iterator<Vertex> vertex_iterator_one = graph.vertexIterator();
-
-        while(vertex_iterator_one.hasNext()) {
-            Vertex v1 = vertex_iterator_one.next();
-            Iterator<Vertex> vertex_iterator_two = graph.vertexIterator();
-            while (vertex_iterator_two.hasNext()) {
-                Vertex v2 = vertex_iterator_two.next();
-                if (v1 == v2) {
-                    weight_matrix[v1.getId()][v2.getId()] = 0;
-                    path_matrix[v1.getId()][v2.getId()] = v2;
-                }
-                else {
-                    Edge edge = graph.findEdge(v1, v2);
-                    if (edge != null) {
-                        weight_matrix[v1.getId()][v2.getId()] = edge.getWeight();
-                        path_matrix[v1.getId()][v2.getId()] = v2;
-                    }
-                    else {
-                        weight_matrix[v1.getId()][v2.getId()] = Double.POSITIVE_INFINITY;
-                        path_matrix[v1.getId()][v2.getId()] = null;
-                    }
-                }
-            }
-        }
-    }
+//    private static int closestVertex(Vertex target, ArrayList<Vertex> selected_vertices, ArrayList<Vertex> path) {
+//        int min_weight = Integer.MAX_VALUE;
+//        for (Vertex vertex : selected_vertices) {
+//            int weight = (int) weight_matrix[vertex.getId()][target.getId()];
+//            if (weight < min_weight) {
+//                min_weight = weight;
+//                min_path = path_builder.getPath(vertex, target);
+//            }
+//        }
+//    }
 
     private static void markPath(Graph g, ArrayList<Vertex> path) {
         for (int i = 0; i < path.size() - 1; i++) {
