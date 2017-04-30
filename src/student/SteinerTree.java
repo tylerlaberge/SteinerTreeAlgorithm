@@ -28,13 +28,35 @@ import steinerTree.SteinerTreeTester;
  */
 public class SteinerTree
 {
-    // Simple example routine that just does a depth first search until it reaches
-    // all of the target vertices.
+    private static class PathBuilder {
+
+        private Vertex[][] path_matrix;
+
+        private PathBuilder(Vertex[][] path_matrix) {
+            this.path_matrix = path_matrix;
+        }
+
+        private ArrayList<Vertex> getPath(Vertex v1, Vertex v2) {
+            if (this.path_matrix[v1.getId()][v2.getId()] == null) {
+                return new ArrayList<>();
+            }
+            else {
+                ArrayList<Vertex> path = new ArrayList<>();
+                path.add(v1);
+                while (v1 != v2) {
+                    v1 = this.path_matrix[v1.getId()][v2.getId()];
+                    path.add(v1);
+                }
+                return path;
+            }
+        }
+    }
+
     public static int steinerTree(Graph g, ArrayList<Vertex> targets)
     {
-        Vertex[][] all_paths = new Vertex[g.numVertices()][g.numVertices()];
-        double[][] shortest_paths = shortestPaths(g, all_paths);
-        PathBuilder path_builder = new PathBuilder(all_paths);
+        double[][] weight_matrix = new double[g.numVertices()][g.numVertices()];
+
+        PathBuilder path_builder = shortestPaths(g, weight_matrix);
 
         Set<Vertex> selected_vertices = new HashSet<>();
         selected_vertices.add(targets.get(0));
@@ -46,7 +68,7 @@ public class SteinerTree
             int min_weight = Integer.MAX_VALUE;
             ArrayList<Vertex> min_path = new ArrayList<>();
             for (Vertex vertex : selected_vertices) {
-                int weight = (int) shortest_paths[vertex.getId()][target.getId()];
+                int weight = (int) weight_matrix[vertex.getId()][target.getId()];
                 if (weight < min_weight) {
                     min_weight = weight;
                     min_path = path_builder.getPath(vertex, target);
@@ -59,64 +81,26 @@ public class SteinerTree
         return total_weight;
     }
 
-    private static void markPath(Graph g, ArrayList<Vertex> path) {
-        for (int i = 0; i < path.size() - 1; i++) {
-            Vertex v1 = path.get(i);
-            Vertex v2 = path.get(i + 1);
+    private static PathBuilder shortestPaths(Graph graph, double[][] weight_matrix) {
+        Vertex[][] path_matrix = new Vertex[graph.numVertices()][graph.numVertices()];
 
-            g.findEdge(v1, v2).setMark(1);
-        }
-    }
-    private static int sum(ArrayList<Integer> values) {
-        int sum = 0;
-        for (int value : values) {
-            sum += value;
-        }
-        return sum;
-    }
-    private static double[][] shortestPaths(Graph graph, Vertex[][] all_paths) {
-        double[][] shortest_paths = new double[graph.numVertices()][graph.numVertices()];
-        buildInitialPathMatrices(graph, shortest_paths, all_paths);
+        initializeShortestPathMatrices(graph, weight_matrix, path_matrix);
 
         for (int k = 0; k < graph.numVertices(); k++) {
             for (int i = 0; i < graph.numVertices(); i++) {
                 for (int j = 0; j < graph.numVertices(); j++) {
-                    if ((shortest_paths[i][k] + shortest_paths[k][j]) < shortest_paths[i][j]) {
-                        shortest_paths[i][j] = shortest_paths[i][k] + shortest_paths[k][j];
-                        all_paths[i][j] = all_paths[i][k];
+                    if ((weight_matrix[i][k] + weight_matrix[k][j]) < weight_matrix[i][j]) {
+                        weight_matrix[i][j] = weight_matrix[i][k] + weight_matrix[k][j];
+                        path_matrix[i][j] = path_matrix[i][k];
                     }
                 }
             }
         }
 
-        return shortest_paths;
+        return new PathBuilder(path_matrix);
     }
 
-    private static class PathBuilder {
-
-        private Vertex[][] all_paths;
-
-        private PathBuilder(Vertex[][] all_paths) {
-            this.all_paths = all_paths;
-        }
-
-        private ArrayList<Vertex> getPath(Vertex v1, Vertex v2) {
-            if (this.all_paths[v1.getId()][v2.getId()] == null) {
-                return new ArrayList<>();
-            }
-            else {
-                ArrayList<Vertex> path = new ArrayList<>();
-                path.add(v1);
-                while (v1 != v2) {
-                    v1 = this.all_paths[v1.getId()][v2.getId()];
-                    path.add(v1);
-                }
-                return path;
-            }
-        }
-    }
-
-    private static double[][] buildInitialPathMatrices(Graph graph, double[][] adjacency_matrix, Vertex[][] path_matrix) {
+    private static void initializeShortestPathMatrices(Graph graph, double[][] weight_matrix, Vertex[][] path_matrix) {
         Iterator<Vertex> vertex_iterator_one = graph.vertexIterator();
 
         while(vertex_iterator_one.hasNext()) {
@@ -125,23 +109,31 @@ public class SteinerTree
             while (vertex_iterator_two.hasNext()) {
                 Vertex v2 = vertex_iterator_two.next();
                 if (v1 == v2) {
-                    adjacency_matrix[v1.getId()][v2.getId()] = 0;
+                    weight_matrix[v1.getId()][v2.getId()] = 0;
                     path_matrix[v1.getId()][v2.getId()] = v2;
                 }
                 else {
                     Edge edge = graph.findEdge(v1, v2);
                     if (edge != null) {
-                        adjacency_matrix[v1.getId()][v2.getId()] = edge.getWeight();
+                        weight_matrix[v1.getId()][v2.getId()] = edge.getWeight();
                         path_matrix[v1.getId()][v2.getId()] = v2;
                     }
                     else {
-                        adjacency_matrix[v1.getId()][v2.getId()] = Double.POSITIVE_INFINITY;
+                        weight_matrix[v1.getId()][v2.getId()] = Double.POSITIVE_INFINITY;
                         path_matrix[v1.getId()][v2.getId()] = null;
                     }
                 }
             }
         }
-        return adjacency_matrix;
+    }
+
+    private static void markPath(Graph g, ArrayList<Vertex> path) {
+        for (int i = 0; i < path.size() - 1; i++) {
+            Vertex v1 = path.get(i);
+            Vertex v2 = path.get(i + 1);
+
+            g.findEdge(v1, v2).setMark(1);
+        }
     }
 }
 
