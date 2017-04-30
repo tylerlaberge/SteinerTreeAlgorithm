@@ -61,23 +61,39 @@ public class SteinerTree
         Set<Vertex> selected_vertices = new HashSet<>();
         selected_vertices.add(targets.get(0));
 
-        int total_weight = 0;
-        for (int i = 1; i < targets.size(); i++) {
-            Vertex target = targets.get(i);
+        ArrayList<Vertex> remaining_targets = new ArrayList<>();
+        for (int i = 1; i < targets.size(); i ++) {
+            remaining_targets.add(targets.get(i));
+        }
 
-            int min_weight = Integer.MAX_VALUE;
-            ArrayList<Vertex> min_path = new ArrayList<>();
-            for (Vertex vertex : selected_vertices) {
-                int weight = (int) weight_matrix[vertex.getId()][target.getId()];
-                if (weight < min_weight) {
-                    min_weight = weight;
-                    min_path = path_builder.getPath(vertex, target);
+        int total_weight = 0;
+        while(!remaining_targets.isEmpty()) {
+            Vertex closest_target = null;
+            ArrayList<Vertex> closest_target_path = new ArrayList<>();
+            int closest_target_weight = Integer.MAX_VALUE;
+
+            for (Vertex target : remaining_targets) {
+                int min_weight = Integer.MAX_VALUE;
+                ArrayList<Vertex> min_path = new ArrayList<>();
+                for (Vertex vertex : selected_vertices) {
+                    int weight = (int) weight_matrix[vertex.getId()][target.getId()];
+                    if (weight < min_weight) {
+                        min_weight = weight;
+                        min_path = path_builder.getPath(vertex, target);
+                    }
+                }
+                if (min_weight < closest_target_weight) {
+                    closest_target_path = min_path;
+                    closest_target_weight = min_weight;
+                    closest_target = target;
                 }
             }
-            markPath(g, min_path);
-            selected_vertices.addAll(min_path);
-            total_weight += min_weight;
+            markPath(g, closest_target_path);
+            selected_vertices.addAll(closest_target_path);
+            total_weight += closest_target_weight;
+            remaining_targets.remove(closest_target);
         }
+        
         return total_weight;
     }
 
